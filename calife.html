@@ -1,0 +1,2343 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aadhaar-Based Enrollment</title>
+  <style>
+    :root {
+      --primary: #1e40af;
+      --primary-light: #2563eb;
+      --primary-dark: #1e3a8a;
+      --accent: #f97316;
+      --bg-light: #f8fafc;
+      --text-dark: #1e293b;
+      --text-light: #64748b;
+      --border: #cbd5e1;
+      --success: #16a34a;
+      --error: #ef4444;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    body {
+      background-color: #f0f9ff;
+      color: var(--text-dark);
+      line-height: 1.6;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 40px 20px;
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 30px;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .logo-icon {
+      width: 40px;
+      height: 40px;
+      background-color: var(--primary);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: bold;
+      font-size: 20px;
+    }
+
+    .logo-text {
+      font-size: 24px;
+      font-weight: bold;
+      color: var(--primary-dark);
+    }
+
+    .form-card {
+      background-color: white;
+      border-radius: 16px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+      padding: 30px;
+      margin-bottom: 20px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .form-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 6px;
+      background: linear-gradient(90deg, var(--primary) 0%, var(--primary-light) 100%);
+    }
+
+    .step-indicator {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin: 20px 0;
+      padding: 0 40px;
+    }
+
+    .step {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      flex: 1;
+    }
+
+    .step-number {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      background: white;
+      border: 2px solid #ccc;
+      color: #999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      z-index: 2;
+      position: relative;
+    }
+
+    .step-number span {
+      display: block !important;
+      font-size: 14px;
+      color: inherit;
+    }
+
+    .step.active .step-number {
+      border-color: #4CAF50;
+      background: #4CAF50;
+      color: white;
+    }
+
+    .step.active .step-number span {
+      display: block !important;
+      color: white;
+    }
+
+    .step.completed .step-number {
+      border-color: #4CAF50;
+      color: #4CAF50;
+      background: white;
+    }
+
+    .step.completed .step-number span {
+      display: block !important;
+      color: #4CAF50;
+    }
+
+    .step.completed .step-number::before,
+    .step.active .step-number::before,
+    .step.completed .step-number::after,
+    .step.active .step-number::after {
+      display: none !important;
+    }
+
+    .step-text {
+      margin-top: 6px;
+      font-size: 12px;
+      color: #999;
+    }
+
+    .step.active .step-text {
+      color: #4CAF50;
+      font-weight: bold;
+    }
+
+    .step.completed .step-text {
+      color: #4CAF50;
+    }
+
+    .step-line {
+      position: absolute;
+      top: 15px;
+      left: calc(-50% + 15px);
+      right: calc(50% + 15px);
+      height: 2px;
+      background: #ccc;
+      z-index: 1;
+    }
+
+    .step:first-child .step-line {
+      display: none;
+    }
+
+    .step.completed .step-line {
+      background: #4CAF50;
+    }
+
+    .step-content {
+      display: none;
+      opacity: 0;
+      transform: translateY(10px);
+      transition: all 0.3s ease;
+    }
+
+    .step-content.active {
+      display: block;
+      opacity: 1;
+      transform: translateY(0);
+      animation: fadeIn 0.5s ease;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .form-title {
+      margin-bottom: 25px;
+      color: var(--primary-dark);
+      font-size: 20px;
+      position: relative;
+      padding-bottom: 10px;
+    }
+
+    .form-title::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 60px;
+      height: 3px;
+      background-color: var(--accent);
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-row {
+      display: flex;
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+
+    .form-col {
+      flex: 1;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 6px;
+      font-weight: 500;
+      color: var(--text-dark);
+      font-size: 14px;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 12px 15px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 14px;
+      color: var(--text-dark);
+      transition: all 0.3s;
+    }
+
+    input:focus, select:focus {
+      outline: none;
+      border-color: var(--primary-light);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+
+    input:disabled, select:disabled {
+      background-color: #f5f5f5;
+      cursor: not-allowed;
+    }
+
+    .input-group {
+      position: relative;
+    }
+
+    .input-icon {
+      position: absolute;
+      right: 15px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-light);
+    }
+
+    .verified-badge {
+      display: inline-flex;
+      align-items: center;
+      background-color: #dcfce7;
+      color: var(--success);
+      font-size: 12px;
+      padding: 4px 8px;
+      border-radius: 4px;
+      margin-left: 10px;
+    }
+
+    .radio-group {
+      display: flex;
+      gap: 20px;
+    }
+
+    .radio-option {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+    }
+
+    .radio-option input {
+      width: auto;
+    }
+
+    .buttons {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 30px;
+    }
+
+    .btn {
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-weight: 500;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.3s;
+      border: none;
+    }
+
+    .btn-primary {
+      background-color: var(--primary);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background-color: var(--primary-dark);
+    }
+
+    .btn-outline {
+      background-color: transparent;
+      border: 1px solid var(--primary);
+      color: var(--primary);
+    }
+
+    .btn-outline:hover {
+      background-color: rgba(37, 99, 235, 0.05);
+    }
+
+    .btn-secondary {
+      background-color: #e5e7eb;
+      color: var(--text-dark);
+    }
+
+    .btn-secondary:hover {
+      background-color: #d1d5db;
+    }
+
+    .upload-box {
+      border: 2px dashed var(--border);
+      border-radius: 8px;
+      padding: 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .upload-box:hover {
+      border-color: var(--primary-light);
+    }
+
+    .upload-icon {
+      font-size: 30px;
+      color: var(--primary-light);
+      margin-bottom: 10px;
+    }
+
+    .upload-text {
+      font-size: 14px;
+      color: var(--text-light);
+    }
+
+    .checkbox-group {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    .checkbox-group input {
+      width: auto;
+      margin-top: 5px;
+    }
+
+    .consent-text {
+      font-size: 14px;
+      color: var(--text-light);
+    }
+
+    .review-section {
+      margin-bottom: 25px;
+    }
+
+    .review-title {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 15px;
+      color: var(--primary-dark);
+    }
+
+    .review-data {
+      background-color: var(--bg-light);
+      border-radius: 8px;
+      padding: 15px;
+    }
+
+    .review-item {
+      display: flex;
+      margin-bottom: 10px;
+    }
+
+    .review-label {
+      width: 180px;
+      font-weight: 500;
+      color: var(--text-light);
+      font-size: 14px;
+    }
+
+    .review-value {
+      flex: 1;
+      font-size: 14px;
+    }
+
+    .success-message {
+      text-align: center;
+      padding: 40px 0;
+    }
+
+    .success-icon {
+      font-size: 60px;
+      color: var(--success);
+      margin-bottom: 20px;
+    }
+
+    .success-title {
+      font-size: 24px;
+      font-weight: bold;
+      color: var(--success);
+      margin-bottom: 10px;
+    }
+
+    .success-text {
+      font-size: 16px;
+      color: var(--text-light);
+      margin-bottom: 30px;
+      max-width: 500px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .success-detail {
+      background-color: var(--bg-light);
+      border-radius: 8px;
+      padding: 15px;
+      max-width: 400px;
+      margin: 0 auto 20px;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .success-detail-label {
+      font-weight: 500;
+      color: var(--text-light);
+    }
+
+    /* For hiding elements not in the current step */
+    .hidden {
+      display: none;
+    }
+
+    /* Avatar preview */
+    .avatar-preview {
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      background-color: #e5e7eb;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 20px;
+      overflow: hidden;
+    }
+
+    .avatar-preview img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .avatar-icon {
+      font-size: 40px;
+      color: var(--text-light);
+    }
+
+    .help-text {
+      font-size: 12px;
+      color: var(--text-light);
+      margin-top: 6px;
+    }
+
+    .info-tooltip {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      background-color: var(--text-light);
+      color: white;
+      border-radius: 50%;
+      text-align: center;
+      line-height: 16px;
+      font-size: 12px;
+      margin-left: 5px;
+      cursor: pointer;
+    }
+    
+    /* Success page */
+    #submission-success {
+      display: none;
+      text-align: center;
+      padding: 40px 0;
+    }
+    
+    .checkmark-circle {
+      width: 80px;
+      height: 80px;
+      margin: 0 auto 20px;
+      border-radius: 50%;
+      background-color: var(--success);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .success-policy-number {
+      font-size: 24px;
+      font-weight: bold;
+      margin: 20px 0;
+      padding: 15px;
+      background-color: #f0f9ff;
+      border-radius: 8px;
+      display: inline-block;
+    }
+
+    .esign-box {
+      background-color: var(--bg-light);
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .esign-content {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+
+    .esign-icon {
+      width: 40px;
+      height: 40px;
+      background-color: var(--primary-light);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+    }
+
+    .esign-text {
+      font-size: 14px;
+    }
+
+    .esign-number {
+      font-weight: bold;
+      color: var(--primary-dark);
+      margin-top: 4px;
+    }
+
+    .consent-box {
+      background-color: var(--bg-light);
+      border-radius: 8px;
+      padding: 20px;
+    }
+
+    .consent-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      margin-bottom: 15px;
+    }
+
+    .consent-item:last-child {
+      margin-bottom: 0;
+    }
+
+    .consent-item input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      margin-top: 3px;
+    }
+
+    .consent-item label {
+      font-size: 14px;
+      line-height: 1.5;
+      color: var(--text-dark);
+    }
+
+    .otp-section {
+      margin-top: 20px;
+      padding: 20px;
+      background-color: var(--bg-light);
+      border-radius: 8px;
+    }
+
+    .otp-message {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 20px;
+      color: var(--success);
+      font-size: 14px;
+    }
+
+    .otp-input-group {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      margin-bottom: 20px;
+    }
+
+    .otp-input {
+      width: 45px;
+      height: 45px;
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      text-align: center;
+      font-size: 18px;
+      font-weight: bold;
+    }
+
+    .otp-input:focus {
+      border-color: var(--primary);
+      outline: none;
+    }
+
+    .otp-actions {
+      display: flex;
+      gap: 15px;
+      justify-content: center;
+      margin-bottom: 15px;
+    }
+
+    .otp-timer {
+      text-align: center;
+      font-size: 14px;
+      color: var(--text-light);
+    }
+
+    .completed {
+      background-color: var(--success);
+      color: white;
+      border-color: var(--success);
+    }
+
+    /* Add styles for alerts */
+    .alert-success, .alert-error {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 16px;
+      border-radius: 8px;
+      margin: 10px 0;
+      animation: slideIn 0.3s ease;
+    }
+
+    .alert-success {
+      background-color: #dcfce7;
+      color: var(--success);
+      border: 1px solid #86efac;
+    }
+
+    .alert-error {
+      background-color: #fee2e2;
+      color: var(--error);
+      border: 1px solid #fca5a5;
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* Remove any potential background colors */
+    .step *, .step-indicator * {
+      background-color: transparent !important;
+    }
+
+    /* Only keep white background for the number circles */
+    .step-number {
+      background-color: white !important;
+    }
+
+    .payment-section {
+      margin-top: 30px;
+      padding: 20px;
+      background-color: var(--bg-light);
+      border-radius: 8px;
+    }
+
+    .payment-options {
+      display: flex;
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+
+    .payment-option {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 15px;
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .payment-option:hover {
+      border-color: var(--primary-light);
+    }
+
+    .payment-option input[type="radio"] {
+      width: auto;
+    }
+
+    .payment-option input[type="radio"]:checked + .payment-icon + .payment-text {
+      color: var(--primary);
+      font-weight: 600;
+    }
+
+    .payment-option input[type="radio"]:checked + .payment-icon {
+      color: var(--primary);
+    }
+
+    .payment-icon {
+      font-size: 24px;
+      display: flex;
+      align-items: center;
+    }
+
+    .payment-text {
+      font-size: 14px;
+      color: var(--text-dark);
+    }
+
+    .payment-details {
+      margin-top: 20px;
+      padding: 20px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+    }
+
+    /* Update step indicator to show step numbers clearly */
+    .step-number {
+      font-size: 20px;
+      font-weight: bold;
+    }
+
+    .step.active .step-number {
+      background-color: #1e40af;
+      border-color: #1e40af;
+      color: white;
+    }
+
+    .step.active .step-number::before {
+      content: attr(data-step);
+      position: absolute;
+      font-size: 14px;
+      bottom: -20px;
+      left: 50%;
+      transform: translateX(-50%);
+      color: white;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="logo">
+        <div class="logo-icon">
+          <!-- Logo Image -->
+          <img src="download.png" alt="CALI Logo" width="50" height="50">
+        </div>
+        <div class="cali-name">CALI</div>
+        <!-- Suraksha Bharosa text below CALI and logo -->
+        <div class="logo-text">Suraksha Bharosa</div>
+      </div>
+      <!-- Add Product UIN below Suraksha Bharosa text -->
+      <div class="product-uin">Product UIN: xyz</div>
+    </div>
+  </div>
+
+
+    <div class="form-card" id="main-form">
+      <!-- Step Indicator -->
+      <div class="step-indicator">
+        <div class="step active">
+          <div class="step-line"></div>
+          <div class="step-number"><span>1</span></div>
+          <div class="step-text">Aadhaar Auth</div>
+        </div>
+        <div class="step">
+          <div class="step-line"></div>
+          <div class="step-number"><span>2</span></div>
+          <div class="step-text">Additional Details</div>
+        </div>
+        <div class="step">
+          <div class="step-line"></div>
+          <div class="step-number"><span>3</span></div>
+          <div class="step-text">Nominee Details</div>
+        </div>
+        <div class="step">
+          <div class="step-line"></div>
+          <div class="step-number"><span>4</span></div>
+          <div class="step-text">Bank & Health</div>
+        </div>
+        <div class="step">
+          <div class="step-line"></div>
+          <div class="step-number"><span>5</span></div>
+          <div class="step-text">Consent</div>
+        </div>
+        <div class="step">
+          <div class="step-line"></div>
+          <div class="step-number"><span>6</span></div>
+          <div class="step-text">Payment</div>
+        </div>
+      </div>
+
+      <!-- Step 1: Aadhaar Authentication -->
+      <div class="step-content active" id="step1">
+        <h2 class="form-title">Aadhaar Authentication</h2>
+        <div class="form-group">
+          <label for="aadhaar">Aadhaar Number*</label>
+          <div class="input-group">
+            <input type="text" id="aadhaar" placeholder="Enter 12-digit Aadhaar Number" maxlength="12" value="123456789012">
+          </div>
+        </div>
+        <div class="form-group">
+          <button class="btn btn-primary" id="verify-aadhaar">Verify Aadhaar</button>
+        </div>
+
+        <!-- These fields appear after verification -->
+        <div class="verified-section hidden" id="aadhaar-verified-section">
+          <div class="verified-badge">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+              <polyline points="22 4 12 14.01 9 11.01"></polyline>
+            </svg>
+            <span>Verified</span>
+          </div>
+
+          <div class="form-row">
+            <div class="form-col">
+              <label for="first-name">First Name*</label>
+              <input type="text" id="first-name" value="Rajesh">
+            </div>
+            <div class="form-col">
+              <label for="last-name">Last Name*</label>
+              <input type="text" id="last-name" value="Kumar">
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-col">
+              <label for="dob">Date of Birth*</label>
+              <input type="date" id="dob" value="1990-05-15" disabled>
+            </div>
+            <div class="form-col">
+              <label for="gender">Gender*</label>
+              <select id="gender">
+                <option value="Male" selected>Male</option>
+                <option value="Female">Female</option>
+                <option value="Transgender">Transgender</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="mobile">Mobile Number*</label>
+            <input type="text" id="mobile" maxlength="10" value="9876543210">
+          </div>
+
+          <div class="form-group">
+            <label for="address">Address*</label>
+            <input type="text" id="address" value="123, Mahatma Gandhi Road">
+          </div>
+
+          <div class="form-row">
+            <div class="form-col">
+              <label for="city">City*</label>
+              <input type="text" id="city" value="Mumbai">
+            </div>
+            <div class="form-col">
+              <label for="state">State*</label>
+              <input type="text" id="state" value="Maharashtra">
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-col">
+              <label for="country">Country*</label>
+              <input type="text" id="country" value="India" disabled>
+            </div>
+            <div class="form-col">
+              <label for="pin">PIN Code*</label>
+              <input type="text" id="pin" maxlength="6" value="400001">
+            </div>
+          </div>
+          
+          <div class="buttons">
+            <div></div>
+            <button class="btn btn-primary next-step">Proceed</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 2: Additional Details -->
+      <div class="step-content" id="step2">
+        <h2 class="form-title">Additional Details</h2>
+
+        <div class="form-group">
+          <label for="sum-assured">Sum Assured</label>
+          <input type="text" id="sum-assured" value="₹100,000" disabled>
+        </div>
+
+        <div class="form-group">
+          <label for="occupation">Occupation*</label>
+          <select id="occupation">
+            <option value="">Select Occupation</option>
+            <option value="Salaried" selected>Salaried</option>
+            <option value="Business">Business Owner</option>
+            <option value="Professional">Professional</option>
+            <option value="Student">Student</option>
+            <option value="Homemaker">Homemaker</option>
+            <option value="Retired">Retired</option>
+            <option value="Agriculture">Agriculture</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="education">Educational Qualification</label>
+          <select id="education">
+            <option value="0">0-Illiterate</option>
+            <option value="1">1-Literate</option>
+            <option value="2" selected>2-SSC</option>
+            <option value="3">3-Graduate & above</option>
+          </select>
+        </div>
+        
+        <div class="buttons">
+          <button class="btn btn-outline prev-step">Back</button>
+          <button class="btn btn-primary next-step">Next</button>
+        </div>
+      </div>
+
+      <!-- Step 3: Nominee & Appointee Details -->
+      <div class="step-content" id="step3">
+        <h2 class="form-title">Nominee & Appointee Details</h2>
+
+        <div class="form-row">
+          <div class="form-col">
+            <label for="nominee-first-name">Nominee First Name*</label>
+            <input type="text" id="nominee-first-name" placeholder="Enter nominee first name" value="Sanjay">
+          </div>
+          <div class="form-col">
+            <label for="nominee-last-name">Nominee Last Name*</label>
+            <input type="text" id="nominee-last-name" placeholder="Enter nominee last name" value="Kumar">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-col">
+            <label for="nominee-gender">Nominee Gender*</label>
+            <select id="nominee-gender">
+              <option value="Male" selected>Male</option>
+              <option value="Female">Female</option>
+              <option value="Transgender">Transgender</option>
+            </select>
+          </div>
+          <div class="form-col">
+            <label for="nominee-dob">Nominee Date of Birth*</label>
+            <input type="date" id="nominee-dob" value="2000-03-10">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-col">
+            <label for="nominee-relation">Nominee Relationship with Member*</label>
+            <select id="nominee-relation">
+              <option value="">Select Relationship</option>
+              <option value="Spouse">Spouse</option>
+              <option value="Son" selected>Son</option>
+              <option value="Daughter">Daughter</option>
+              <option value="Father">Father</option>
+              <option value="Mother">Mother</option>
+              <option value="Brother">Brother</option>
+              <option value="Sister">Sister</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+          <div class="form-col">
+            <label for="nominee-mobile">Nominee Mobile Number*</label>
+            <input type="text" id="nominee-mobile" maxlength="10" placeholder="Enter 10-digit mobile number" value="8765432109">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="nominee-email">Nominee Email ID</label>
+          <input type="email" id="nominee-email" placeholder="Enter email address (optional)" value="sanjay.kumar@example.com">
+        </div>
+
+        <!-- Appointee section (shows only if nominee is minor) -->
+        <div class="minor-section hidden" id="appointee-section">
+          <div class="form-row">
+            <div class="form-col">
+              <label for="appointee-name">Appointee Name*</label>
+              <input type="text" id="appointee-name" placeholder="Enter appointee name">
+            </div>
+            <div class="form-col">
+              <label for="appointee-relation">Appointee Relationship with Nominee*</label>
+              <select id="appointee-relation">
+                <option value="">Select Relationship</option>
+                <option value="Father">Father</option>
+                <option value="Mother">Mother</option>
+                <option value="Grandfather">Grandfather</option>
+                <option value="Grandmother">Grandmother</option>
+                <option value="Uncle">Uncle</option>
+                <option value="Aunt">Aunt</option>
+                <option value="Legal Guardian">Legal Guardian</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        
+        <div class="buttons">
+          <button class="btn btn-outline prev-step">Back</button>
+          <button class="btn btn-primary next-step">Next</button>
+        </div>
+      </div>
+
+      <!-- Step 4: Bank & Health Details -->
+      <div class="step-content" id="step4">
+        <h2 class="form-title">Bank & Health Details</h2>
+
+        <div class="form-group">
+          <label>Photograph Upload*</label>
+          <div class="avatar-preview">
+            <img src="/api/placeholder/100/100" alt="profile photo">
+          </div>
+          <div class="upload-box">
+            <div class="upload-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="17 8 12 3 7 8"></polyline>
+                <line x1="12" y1="3" x2="12" y2="15"></line>
+              </svg>
+            </div>
+            <div class="upload-text">Click to upload or drag and drop</div>
+            <div class="help-text">JPG, PNG or GIF (MAX. 2MB)</div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="bank-name">Name as per Bank Account*</label>
+          <input type="text" id="bank-name" placeholder="Enter name as per bank account" value="Rajesh Kumar">
+        </div>
+
+        <div class="form-row">
+          <div class="form-col">
+            <label for="account-number">Bank Account Number*</label>
+            <input type="text" id="account-number" placeholder="Enter bank account number" value="1234567890123456">
+          </div>
+          <div class="form-col">
+            <label for="ifsc">IFSC Code*</label>
+            <input type="text" id="ifsc" placeholder="Enter IFSC code" value="SBIN0001234">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-col">
+            <label for="height">Height (feet & inches)*</label>
+            <div class="input-group">
+              <input type="text" id="height" placeholder="Enter height" value="5.8">
+            </div>
+          </div>
+          <div class="form-col">
+            <label for="weight">Weight (kg)*</label>
+            <div class="input-group">
+              <input type="text" id="weight" placeholder="Enter weight" value="72">
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="social-schemes">Social Schemes (if applicable)</label>
+          <select id="social-schemes">
+            <option value="">Select if applicable</option>
+            <option value="PMJJBY" selected>PMJJBY - Pradhan Mantri Jeevan Jyoti Bima Yojana</option>
+            <option value="PMSBY">PMSBY - Pradhan Mantri Suraksha Bima Yojana</option>
+            <option value="APY">APY - Atal Pension Yojana</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+
+        <div class="form-row">
+          <div class="form-col">
+            <label for="kyc-type">KYC Type</label>
+            <input type="text" id="kyc-type" value="AA - Aadhaar" disabled>
+          </div>
+          <div class="form-col">
+            <label for="kyc-number">KYC Number</label>
+            <input type="text" id="kyc-number" value="9012" disabled>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Smoker Status</label>
+          <div class="radio-group">
+            <label class="radio-option">
+              <input type="radio" name="smoker" value="Yes"> Yes
+            </label>
+            <label class="radio-option">
+              <input type="radio" name="smoker" value="No" checked> No
+            </label>
+          </div>
+        </div>
+        
+        <div class="buttons">
+          <button class="btn btn-outline prev-step">Back</button>
+          <button class="btn btn-primary next-step">Next</button>
+        </div>
+      </div>
+
+      <!-- Step 5: Consent & Declaration -->
+      <div class="step-content" id="step5">
+        <h2 class="form-title">Consent & Declaration</h2>
+
+        <div class="form-group">
+          <label for="consent-date">Date for Consent</label>
+          <input type="text" id="consent-date" value="02-Apr-2025" disabled>
+        </div>
+
+        <div class="review-section">
+          <h3 class="review-title">Review Personal Details</h3>
+          <div class="review-data">
+            <div class="review-item">
+              <div class="review-label">Name:</div>
+              <div class="review-value">Rajesh Kumar</div>
+            </div>
+            <div class="review-item">
+              <div class="review-label">Date of Birth:</div>
+              <div class="review-value">15-May-1990</div>
+            </div>
+            <div class="review-item">
+              <div class="review-label">Gender:</div>
+              <div class="review-value">Male</div>
+            </div>
+            <div class="review-item">
+              <div class="review-label">Mobile Number:</div>
+              <div class="review-value">9876543210</div>
+            </div>
+            <div class="review-item">
+              <div class="review-label">Address:</div>
+              <div class="review-value">123, Mahatma Gandhi Road, Mumbai, Maharashtra - 400001</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="review-section">
+          <h3 class="review-title">Review Policy Details</h3>
+          <div class="review-data">
+            <div class="review-item">
+              <div class="review-label">Sum Assured:</div>
+              <div class="review-value">₹100,000</div>
+            </div>
+            <div class="review-item">
+              <div class="review-label">Occupation:</div>
+              <div class="review-value">Salaried</div>
+            </div>
+            <div class="review-item">
+              <div class="review-label">Educational Qualification:</div>
+              <div class="review-value">2-SSC</div>
+            </div>
+            <div class="review-item">
+              <div class="review-label">Smoker Status:</div>
+              <div class="review-value">No</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="review-section">
+          <h3 class="review-title">Review Nominee Details</h3>
+          <div class="review-data">
+            <div class="review-item">
+              <div class="review-label">Nominee Name:</div>
+              <div class="review-value">Sanjay Kumar</div>
+            </div>
+            <div class="review-item">
+              <div class="review-label">Relationship:</div>
+              <div class="review-value">Son</div>
+            </div>
+            <div class="review-item">
+              <div class="review-label">Date of Birth:</div>
+              <div class="review-value">10-Mar-2000</div>
+            </div>
+            <div class="review-item">
+              <div class="review-label">Mobile Number:</div>
+              <div class="review-value">8765432109</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="review-section">
+          <h3 class="review-title">Review Bank & Health Details</h3>
+          <div class="review-data">
+            <div class="review-item">
+              <div class="review-label">Bank Account Name:</div>
+              <div class="review-value">Rajesh Kumar</div>
+            </div>
+            <div class="review-item">
+              <div class="review-label">Account Number:</div>
+              <div class="review-value">1234567890123456</div>
+            </div>
+            <div class="review-item">
+              <div class="review-label">IFSC Code:</div>
+              <div class="review-value">SBIN0001234</div>
+            </div>
+            <div class="review-item">
+              <div class="review-label">Height:</div>
+              <div class="review-value">5.8 feet</div>
+            </div>
+            <div class="review-item">
+              <div class="review-label">Weight:</div>
+              <div class="review-value">72 kg</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Consent Section -->
+        <div class="form-group">
+          <h3 class="review-title">Consent & Declaration</h3>
+          
+          <!-- Add Product Details Section before consents -->
+          <div class="review-section">
+            <h3 class="review-title">Product Details & Benefits</h3>
+            <div class="review-data">
+              <div class="review-item">
+                <div class="review-label">Policy Name:</div>
+                <div class="review-value">Suraksha Bharosa Life Insurance</div>
+              </div>
+              <div class="review-item">
+                <div class="review-label">Sum Assured:</div>
+                <div class="review-value">₹100,000</div>
+              </div>
+              <div class="review-item">
+                <div class="review-label">Premium Amount:</div>
+                <div class="review-value" id="consent-premium">₹1400.00</div>
+              </div>
+              <div class="review-item">
+                <div class="review-label">Policy Term:</div>
+                <div class="review-value">10 Years</div>
+              </div>
+              <div class="review-item">
+                <div class="review-label">Expected Maturity Value:</div>
+                <div class="review-value">₹150,000</div>
+              </div>
+              <div class="review-item">
+                <div class="review-label">Premium Payment Frequency:</div>
+                <div class="review-value">Annual</div>
+              </div>
+              <div class="review-item">
+                <div class="review-label">Death Benefit:</div>
+                <div class="review-value">₹100,000 + Accrued Bonus</div>
+              </div>
+              <div class="review-item">
+                <div class="review-label">Maturity Benefit:</div>
+                <div class="review-value">₹150,000 + Final Bonus</div>
+              </div>
+              <div class="review-item">
+                <div class="review-label">Surrender Value:</div>
+                <div class="review-value">Available after 3 years</div>
+              </div>
+              <div class="review-item">
+                <div class="review-label">Free Look Period:</div>
+                <div class="review-value">15 days from receipt of policy</div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="consent-box">
+            <div class="consent-item">
+              <input type="checkbox" id="select-all-consent">
+              <label for="select-all-consent" style="font-weight: bold;">Select All Consents</label>
+            </div>
+            <div class="consent-item">
+              <input type="checkbox" id="consent-health" required>
+              <label for="consent-health">
+                I declare that I am of good health and I do not have any physical defect, deformity or disability. I further declare that I perform all my routine activities independently and that neither I have any history of not have I suffered from any ailment or disease.
+              </label>
+            </div>
+            <div class="consent-item">
+              <input type="checkbox" id="consent-policy" required>
+              <label for="consent-policy">
+                I declare that I am aware that I have applied for Life insurance policy\ provided by CreditAccess Life Insurance Limited, I understand the features of this policy and agree with the features of the policy as provided in the Key Feature Document.
+              </label>
+            </div>
+            <div class="consent-item">
+              <input type="checkbox" id="consent-communication" required>
+              <label for="consent-communication">
+                I give my consent to CreditAccess Life Insurance Limited to send communication related to my policy(s) on above mentioned Mobile/Email/By calling/WhatsApp.
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Aadhaar e-Sign Section -->
+        <div class="form-group">
+          <h3 class="review-title">Aadhaar e-Sign</h3>
+          <div class="esign-box">
+            <div class="esign-content">
+              <div class="esign-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="12" cy="7" r="4"></circle>
+                </svg>
+              </div>
+              <div class="esign-text">
+                <p>Your Aadhaar number will be used for e-Sign</p>
+                <p class="esign-number">XXXX XXXX 9012</p>
+              </div>
+            </div>
+            <button class="btn btn-outline" id="initiate-esign">Generate OTP</button>
+          </div>
+
+          <!-- OTP Verification Section (Initially Hidden) -->
+          <div id="otp-section" class="otp-section hidden">
+            <div class="otp-message">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M22 17H2a3 3 0 0 0 3-3V9a7 7 0 0 1 14 0v5a3 3 0 0 0 3 3zm-8.27 4a2 2 0 0 1-3.46 0"></path>
+              </svg>
+              <span>OTP sent to your registered mobile number ******3210</span>
+            </div>
+            <div class="otp-input-group">
+              <input type="text" maxlength="1" class="otp-input" data-index="1">
+              <input type="text" maxlength="1" class="otp-input" data-index="2">
+              <input type="text" maxlength="1" class="otp-input" data-index="3">
+              <input type="text" maxlength="1" class="otp-input" data-index="4">
+              <input type="text" maxlength="1" class="otp-input" data-index="5">
+              <input type="text" maxlength="1" class="otp-input" data-index="6">
+            </div>
+            <div class="otp-actions">
+              <button class="btn btn-primary" id="verify-otp">Verify OTP</button>
+              <button class="btn btn-outline" id="resend-otp">Resend OTP</button>
+            </div>
+            <div class="otp-timer">
+              Resend OTP in <span id="timer">02:00</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="buttons">
+          <button class="btn btn-outline prev-step">Back</button>
+          <button class="btn btn-primary next-step">Next</button>
+        </div>
+      </div>
+
+      <!-- Step 6: Payment -->
+      <div class="step-content" id="step6">
+        <h2 class="form-title">Premium Payment</h2>
+
+        <div class="review-section">
+          <h3 class="review-title">Premium Details</h3>
+          <div class="review-data">
+            <div class="review-item">
+              <div class="review-label">Premium Amount:</div>
+              <div class="review-value" id="premium-amount">₹1400.00</div>
+            </div>
+            <div class="review-item">
+              <div class="review-label">Total Amount:</div>
+              <div class="review-value" id="total-amount">₹1400.00</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="payment-section">
+          <h3 class="review-title">Payment Method</h3>
+          <div class="payment-options">
+            <label class="payment-option">
+              <input type="radio" name="payment-method" value="upi" checked>
+              <span class="payment-icon">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e1/UPI-Logo-vector.svg/200px-UPI-Logo-vector.svg.png" alt="UPI" style="width: 40px;">
+              </span>
+              <span class="payment-text">UPI Payment</span>
+            </label>
+            
+            <label class="payment-option">
+              <input type="radio" name="payment-method" value="card">
+              <span class="payment-icon">💳</span>
+              <span class="payment-text">Credit/Debit Card</span>
+            </label>
+            
+            <label class="payment-option">
+              <input type="radio" name="payment-method" value="netbanking">
+              <span class="payment-icon">🏦</span>
+              <span class="payment-text">Net Banking</span>
+            </label>
+          </div>
+
+          <!-- UPI Payment Section -->
+          <div id="upi-section" class="payment-details">
+            <div class="form-group">
+              <label for="upi-id">UPI ID</label>
+              <input type="text" id="upi-id" placeholder="Enter your UPI ID (e.g., name@upi)">
+            </div>
+            <button class="btn btn-primary" id="verify-upi">Verify & Pay</button>
+          </div>
+
+          <!-- Card Payment Section -->
+          <div id="card-section" class="payment-details hidden">
+            <div class="form-group">
+              <label for="card-number">Card Number</label>
+              <input type="text" id="card-number" placeholder="1234 5678 9012 3456" maxlength="19">
+            </div>
+            <div class="form-row">
+              <div class="form-col">
+                <label for="expiry">Expiry Date</label>
+                <input type="text" id="expiry" placeholder="MM/YY" maxlength="5">
+              </div>
+              <div class="form-col">
+                <label for="cvv">CVV</label>
+                <input type="password" id="cvv" placeholder="123" maxlength="3">
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="card-name">Name on Card</label>
+              <input type="text" id="card-name" placeholder="Enter name as on card">
+            </div>
+            <button class="btn btn-primary" id="pay-card">Pay Now</button>
+          </div>
+
+          <!-- Net Banking Section -->
+          <div id="netbanking-section" class="payment-details hidden">
+            <div class="form-group">
+              <label for="bank-select">Select Bank</label>
+              <select id="bank-select">
+                <option value="">Select your bank</option>
+                <option value="sbi">State Bank of India</option>
+                <option value="hdfc">HDFC Bank</option>
+                <option value="icici">ICICI Bank</option>
+                <option value="axis">Axis Bank</option>
+                <option value="other">Other Banks</option>
+              </select>
+            </div>
+            <button class="btn btn-primary" id="pay-netbanking">Continue to Net Banking</button>
+          </div>
+        </div>
+        
+        <div class="buttons">
+          <button class="btn btn-outline prev-step">Back</button>
+          <button class="btn btn-primary" id="submit-form">Submit Application</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Success Message -->
+    <div id="submission-success" class="form-card">
+      <div class="checkmark-circle">
+        <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+          <polyline points="22 4 12 14.01 9 11.01"></polyline>
+        </svg>
+      </div>
+      <h2 class="success-title">Thank you being protected!</h2>
+      <p class="success-text">Your application has been received and is being processed. We will contact you shortly with further details.</p>
+      <div class="success-detail">
+        <span class="success-detail-label">Application ID:</span>
+        <span class="success-detail-value">APP123456789</span>
+      </div>
+      
+      <!-- Add Product Details Section -->
+      <div class="review-section" style="max-width: 500px; margin: 20px auto;">
+        <h3 class="review-title">Product Details</h3>
+        <div class="review-data">
+          <div class="review-item">
+            <div class="review-label">Policy Name:</div>
+            <div class="review-value">Suraksha Bharosa Life Insurance</div>
+          </div>
+          <div class="review-item">
+            <div class="review-label">Sum Assured:</div>
+            <div class="review-value">₹100,000</div>
+          </div>
+          <div class="review-item">
+            <div class="review-label">Premium Amount:</div>
+            <div class="review-value" id="success-premium">₹1400.00</div>
+          </div>
+          <div class="review-item">
+            <div class="review-label">Policy Term:</div>
+            <div class="review-value">10 Years</div>
+          </div>
+          <div class="review-item">
+            <div class="review-label">Expected Maturity Value:</div>
+            <div class="review-value">₹150,000</div>
+          </div>
+          <div class="review-item">
+            <div class="review-label">Premium Payment Frequency:</div>
+            <div class="review-value">Annual</div>
+          </div>
+        </div>
+      </div>
+      
+      <button class="btn btn-primary" id="download-receipt">Download Receipt</button>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // Define consent checkboxes array once at the top
+      const consentCheckboxes = [
+        'consent-health',
+        'consent-policy',
+        'consent-communication'
+      ];
+
+      // Form navigation
+      const steps = document.querySelectorAll('.step-content');
+      const stepIndicators = document.querySelectorAll('.step');
+      let currentStep = 0;
+
+      // Validation functions for each step
+      const stepValidations = {
+        // Step 1: Aadhaar Authentication
+        0: () => {
+          const aadhaarVerified = !document.getElementById('aadhaar-verified-section').classList.contains('hidden');
+          if (!aadhaarVerified) {
+            alert('Please verify your Aadhaar number first.');
+            return false;
+          }
+          
+          // Check if all required fields in step 1 are filled
+          const requiredFields = ['first-name', 'last-name', 'mobile', 'address', 'city', 'state', 'pin'];
+          const emptyFields = requiredFields.filter(id => !document.getElementById(id).value.trim());
+          
+          if (emptyFields.length > 0) {
+            alert('Please fill in all required fields.');
+            return false;
+          }
+          return true;
+        },
+
+        // Step 2: Additional Details
+        1: () => {
+          const occupation = document.getElementById('occupation').value;
+          const education = document.getElementById('education').value;
+          const smokerStatus = document.querySelector('input[name="smoker"]:checked');
+
+          if (!occupation || !education || !smokerStatus) {
+            alert('Please complete all fields in Additional Details.');
+            return false;
+          }
+          return true;
+        },
+
+        // Step 3: Nominee Details
+        2: () => {
+          const requiredFields = [
+            'nominee-first-name',
+            'nominee-last-name',
+            'nominee-gender',
+            'nominee-dob',
+            'nominee-relation',
+            'nominee-mobile'
+          ];
+
+          const emptyFields = requiredFields.filter(id => !document.getElementById(id).value.trim());
+          
+          if (emptyFields.length > 0) {
+            alert('Please fill in all nominee details.');
+            return false;
+          }
+
+          // Check appointee details if nominee is minor
+          const nomineeDob = new Date(document.getElementById('nominee-dob').value);
+          const age = calculateAge(nomineeDob);
+          
+          if (age < 18) {
+            const appointeeName = document.getElementById('appointee-name').value.trim();
+            const appointeeRelation = document.getElementById('appointee-relation').value;
+            
+            if (!appointeeName || !appointeeRelation) {
+              alert('Please fill in appointee details as nominee is minor.');
+              return false;
+            }
+          }
+          return true;
+        },
+
+        // Step 4: Bank & Health Details
+        3: () => {
+          const requiredFields = [
+            'bank-name',
+            'account-number',
+            'ifsc',
+            'height',
+            'weight'
+          ];
+
+          const emptyFields = requiredFields.filter(id => !document.getElementById(id).value.trim());
+          
+          if (emptyFields.length > 0) {
+            alert('Please fill in all bank and health details.');
+            return false;
+          }
+
+          // Check if photo is uploaded
+          const avatarPreview = document.querySelector('.avatar-preview img');
+          if (avatarPreview.src.includes('placeholder')) {
+            alert('Please upload your photograph.');
+            return false;
+          }
+          return true;
+        },
+
+        // Step 5: Consent
+        4: () => {
+          const allConsentsChecked = consentCheckboxes.every(id => 
+            document.getElementById(id).checked
+          );
+
+          if (!allConsentsChecked) {
+            alert('Please accept all consents before proceeding.');
+            return false;
+          }
+
+          // Check if e-Sign is completed
+          if (initiateEsignBtn.textContent !== 'e-Sign Completed') {
+            alert('Please complete the Aadhaar e-Sign process before proceeding.');
+            return false;
+          }
+
+          return true;
+        },
+
+        // Step 6: Payment
+        5: () => {
+          // Payment validation will be handled by the submit button
+          return true;
+        }
+      };
+
+      function calculateAge(birthDate) {
+        const today = new Date();
+        let age = today.getFullYear() - birthDate.getFullYear();
+        const monthDiff = today.getMonth() - birthDate.getMonth();
+        if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+          age--;
+        }
+        return age;
+      }
+
+      function syncStepIndicator() {
+        // Find which step content is active
+        let activeStepIndex = 0;
+        steps.forEach((step, index) => {
+          if (step.classList.contains('active')) {
+            activeStepIndex = index;
+          }
+        });
+        
+        // Reset all step indicators
+        stepIndicators.forEach((indicator, index) => {
+          indicator.classList.remove('active', 'completed');
+          if (index < activeStepIndex) {
+            indicator.classList.add('completed');
+          } else if (index === activeStepIndex) {
+            indicator.classList.add('active');
+          }
+        });
+        
+        currentStep = activeStepIndex;
+      }
+
+      // Initialize on page load
+      syncStepIndicator();
+
+      // Show/hide steps with validation
+      function showStep(stepIndex) {
+        // Validate current step before moving to next
+        if (stepIndex > currentStep && !stepValidations[currentStep]()) {
+          return false;
+        }
+
+        steps.forEach((step, index) => {
+          step.classList.remove('active');
+        });
+        
+        steps[stepIndex].classList.add('active');
+        
+        // Update step indicators
+        stepIndicators.forEach((indicator, index) => {
+          indicator.classList.remove('active', 'completed');
+          if (index < stepIndex) {
+            indicator.classList.add('completed');
+          } else if (index === stepIndex) {
+            indicator.classList.add('active');
+          }
+        });
+
+        currentStep = stepIndex;
+        return true;
+      }
+
+      // Next button functionality
+      document.querySelectorAll('.next-step').forEach(button => {
+        button.addEventListener('click', () => {
+          if (currentStep < steps.length - 1) {
+            showStep(currentStep + 1);
+          }
+        });
+      });
+
+      // Back button functionality
+      document.querySelectorAll('.prev-step').forEach(button => {
+        button.addEventListener('click', () => {
+          if (currentStep > 0) {
+            showStep(currentStep - 1);
+          }
+        });
+      });
+
+      // Aadhaar verification
+      const verifyAadhaarBtn = document.getElementById('verify-aadhaar');
+      const aadhaarVerifiedSection = document.getElementById('aadhaar-verified-section');
+      
+      verifyAadhaarBtn.addEventListener('click', () => {
+        const aadhaarNumber = document.getElementById('aadhaar').value.trim();
+        if (aadhaarNumber.length !== 12 || isNaN(aadhaarNumber)) {
+          alert('Please enter a valid 12-digit Aadhaar number.');
+          return;
+        }
+
+        // Simulate Aadhaar verification
+        verifyAadhaarBtn.disabled = true;
+        verifyAadhaarBtn.textContent = 'Verifying...';
+        setTimeout(() => {
+          aadhaarVerifiedSection.classList.remove('hidden');
+          verifyAadhaarBtn.style.display = 'none';
+        }, 1500);
+      });
+
+      // Aadhaar e-Sign functionality with OTP
+      const initiateEsignBtn = document.getElementById('initiate-esign');
+      const otpSection = document.getElementById('otp-section');
+      const verifyOtpBtn = document.getElementById('verify-otp');
+      const resendOtpBtn = document.getElementById('resend-otp');
+      const timerSpan = document.getElementById('timer');
+      const otpInputs = document.querySelectorAll('.otp-input');
+
+      // Disable e-Sign button initially
+      initiateEsignBtn.disabled = true;
+
+      // Check consent checkboxes to enable e-Sign
+      consentCheckboxes.forEach(id => {
+        document.getElementById(id).addEventListener('change', () => {
+          const allChecked = consentCheckboxes.every(checkboxId => 
+            document.getElementById(checkboxId).checked
+          );
+          initiateEsignBtn.disabled = !allChecked;
+          
+          if (allChecked) {
+            initiateEsignBtn.classList.add('btn-primary');
+            initiateEsignBtn.classList.remove('btn-outline');
+          } else {
+            initiateEsignBtn.disabled = true;
+            initiateEsignBtn.classList.remove('btn-primary');
+            initiateEsignBtn.classList.add('btn-outline');
+          }
+        });
+      });
+      
+      let timerInterval;
+      
+      function startTimer(duration) {
+        let timer = duration;
+        clearInterval(timerInterval);
+        
+        timerInterval = setInterval(() => {
+          const minutes = parseInt(timer / 60, 10);
+          const seconds = parseInt(timer % 60, 10);
+          
+          timerSpan.textContent = minutes.toString().padStart(2, '0') + ':' + 
+                                 seconds.toString().padStart(2, '0');
+          
+          if (--timer < 0) {
+            clearInterval(timerInterval);
+            resendOtpBtn.disabled = false;
+          }
+        }, 1000);
+        
+        resendOtpBtn.disabled = true;
+      }
+      
+      // Handle OTP input navigation
+      otpInputs.forEach((input, index) => {
+        input.addEventListener('keyup', (e) => {
+          if (e.key >= 0 && e.key <= 9) {
+            if (index < otpInputs.length - 1) {
+              otpInputs[index + 1].focus();
+            }
+          } else if (e.key === 'Backspace') {
+            if (index > 0) {
+              otpInputs[index - 1].focus();
+            }
+          }
+        });
+      });
+      
+      initiateEsignBtn.addEventListener('click', () => {
+        // Check if all consents are checked
+        const allConsentsChecked = consentCheckboxes.every(id => 
+          document.getElementById(id).checked
+        );
+
+        if (!allConsentsChecked) {
+          alert('Please accept all consents before proceeding with e-Sign.');
+          return;
+        }
+
+        initiateEsignBtn.disabled = true;
+        initiateEsignBtn.textContent = 'Sending OTP...';
+        
+        setTimeout(() => {
+          otpSection.classList.remove('hidden');
+          initiateEsignBtn.textContent = 'OTP Sent';
+          startTimer(120);
+        }, 1500);
+      });
+      
+      // OTP verification functionality
+      verifyOtpBtn.addEventListener('click', () => {
+        const enteredOtp = Array.from(otpInputs).map(input => input.value).join('');
+        
+        if (enteredOtp.length === 6) {
+          verifyOtpBtn.disabled = true;
+          verifyOtpBtn.textContent = 'Verifying...';
+          
+          // Simulate OTP verification
+          setTimeout(() => {
+            // Accept any 6-digit OTP
+            if (enteredOtp.length === 6 && !isNaN(enteredOtp)) {
+              initiateEsignBtn.textContent = 'e-Sign Completed';
+              initiateEsignBtn.classList.remove('btn-outline');
+              initiateEsignBtn.classList.add('btn-primary', 'completed');
+              otpSection.classList.add('hidden');
+              clearInterval(timerInterval);
+              
+              // Show success message
+              const successAlert = document.createElement('div');
+              successAlert.className = 'alert-success';
+              successAlert.innerHTML = `
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                  <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                </svg>
+                <span>OTP verified successfully!</span>
+              `;
+              otpSection.parentNode.insertBefore(successAlert, otpSection.nextSibling);
+            } else {
+              verifyOtpBtn.disabled = false;
+              verifyOtpBtn.textContent = 'Verify OTP';
+              
+              // Show error message
+              const errorAlert = document.createElement('div');
+              errorAlert.className = 'alert-error';
+              errorAlert.innerHTML = `
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="15" y1="9" x2="9" y2="15"></line>
+                  <line x1="9" y1="9" x2="15" y2="15"></line>
+                </svg>
+                <span>Invalid OTP. Please try again.</span>
+              `;
+              otpSection.parentNode.insertBefore(errorAlert, otpSection.nextSibling);
+              
+              // Remove error message after 3 seconds
+              setTimeout(() => {
+                errorAlert.remove();
+              }, 3000);
+              
+              // Clear OTP inputs
+              otpInputs.forEach(input => input.value = '');
+              otpInputs[0].focus();
+            }
+          }, 1500);
+        } else {
+          alert('Please enter a valid 6-digit OTP');
+        }
+      });
+
+      // Add styles for alerts
+      const style = document.createElement('style');
+      style.textContent = `
+        .alert-success, .alert-error {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          padding: 12px 16px;
+          border-radius: 8px;
+          margin: 10px 0;
+          animation: slideIn 0.3s ease;
+        }
+
+        .alert-success {
+          background-color: #dcfce7;
+          color: var(--success);
+          border: 1px solid #86efac;
+        }
+
+        .alert-error {
+          background-color: #fee2e2;
+          color: var(--error);
+          border: 1px solid #fca5a5;
+        }
+
+        @keyframes slideIn {
+          from {
+            opacity: 0;
+            transform: translateY(-10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+      `;
+      document.head.appendChild(style);
+
+      // Form submission with all validations
+      const submitBtn = document.getElementById('submit-form');
+      const mainForm = document.getElementById('main-form');
+      const successMessage = document.getElementById('submission-success');
+      
+      // Select All Consent functionality
+      const selectAllConsent = document.getElementById('select-all-consent');
+
+      selectAllConsent.addEventListener('change', function() {
+        const isChecked = this.checked;
+        consentCheckboxes.forEach(id => {
+          document.getElementById(id).checked = isChecked;
+        });
+        
+        // Update e-Sign button state
+        const initiateEsignBtn = document.getElementById('initiate-esign');
+        if (isChecked) {
+          initiateEsignBtn.disabled = false;
+          initiateEsignBtn.classList.add('btn-primary');
+          initiateEsignBtn.classList.remove('btn-outline');
+        } else {
+          initiateEsignBtn.disabled = true;
+          initiateEsignBtn.classList.remove('btn-primary');
+          initiateEsignBtn.classList.add('btn-outline');
+        }
+      });
+
+      // Update Select All checkbox when individual consents change
+      consentCheckboxes.forEach(id => {
+        document.getElementById(id).addEventListener('change', function() {
+          const allChecked = consentCheckboxes.every(checkboxId => 
+            document.getElementById(checkboxId).checked
+          );
+          selectAllConsent.checked = allChecked;
+        });
+      });
+      
+      submitBtn.addEventListener('click', () => {
+        // Check all previous steps
+        for (let i = 0; i < currentStep; i++) {
+          if (!stepValidations[i]()) {
+            showStep(i);
+            return;
+          }
+        }
+
+        // Check consents
+        const allConsentsChecked = consentCheckboxes.every(id => 
+          document.getElementById(id).checked
+        );
+
+        if (!allConsentsChecked) {
+          alert('Please accept all consents before submitting.');
+          return;
+        }
+
+        // Check e-Sign completion
+        if (initiateEsignBtn.textContent !== 'e-Sign Completed') {
+          alert('Please complete the Aadhaar e-Sign process before submitting.');
+          return;
+        }
+
+        mainForm.style.display = 'none';
+        successMessage.style.display = 'block';
+      });
+
+      // Download receipt
+      document.getElementById('download-receipt').addEventListener('click', () => {
+        // Create receipt content
+        const receiptContent = `
+          <div style="padding: 20px; font-family: Arial, sans-serif;">
+            <h2 style="color: #1e40af;">Application Receipt</h2>
+            <div style="margin: 20px 0; padding: 15px; background: #f8fafc; border-radius: 8px;">
+              <p><strong>Application ID:</strong> APP123456789</p>
+              <p><strong>Date:</strong> ${new Date().toLocaleDateString()}</p>
+              <p><strong>Name:</strong> ${document.getElementById('first-name').value} ${document.getElementById('last-name').value}</p>
+              <p><strong>Aadhaar:</strong> XXXX XXXX ${document.getElementById('aadhaar').value.slice(-4)}</p>
+              <p><strong>Mobile:</strong> ${document.getElementById('mobile').value}</p>
+              <p><strong>Status:</strong> Successfully Submitted</p>
+            </div>
+            <p style="color: #64748b; font-size: 14px;">Please keep this receipt for future reference.</p>
+          </div>
+        `;
+
+        // Create a Blob containing the HTML content
+        const blob = new Blob([receiptContent], { type: 'text/html' });
+        
+        // Create download link
+        const downloadLink = document.createElement('a');
+        downloadLink.href = URL.createObjectURL(blob);
+        downloadLink.download = 'application_receipt.html';
+        
+        // Trigger download
+        document.body.appendChild(downloadLink);
+        downloadLink.click();
+        document.body.removeChild(downloadLink);
+        
+        // Clean up
+        URL.revokeObjectURL(downloadLink.href);
+      });
+
+      // File upload preview
+      const uploadBox = document.querySelector('.upload-box');
+      const avatarPreview = document.querySelector('.avatar-preview img');
+      
+      uploadBox.addEventListener('click', () => {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'image/*';
+        
+        input.onchange = (e) => {
+          const file = e.target.files[0];
+          if (file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+              avatarPreview.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+          }
+        };
+        
+        input.click();
+      });
+
+      // Drag and drop functionality
+      uploadBox.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        uploadBox.style.borderColor = 'var(--primary-light)';
+      });
+
+      uploadBox.addEventListener('dragleave', () => {
+        uploadBox.style.borderColor = 'var(--border)';
+      });
+
+      uploadBox.addEventListener('drop', (e) => {
+        e.preventDefault();
+        uploadBox.style.borderColor = 'var(--border)';
+        
+        const file = e.dataTransfer.files[0];
+        if (file && file.type.startsWith('image/')) {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            avatarPreview.src = e.target.result;
+          };
+          reader.readAsDataURL(file);
+        }
+      });
+
+      // Calculate and display premium based on age
+      function calculatePremium(dateOfBirth) {
+        const today = new Date();
+        const birthDate = new Date(dateOfBirth);
+        const age = today.getFullYear() - birthDate.getFullYear();
+        const monthDiff = today.getMonth() - birthDate.getMonth();
+        if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+          age--;
+        }
+
+        let premium = 0;
+
+        if (age <= 20) {
+          premium = 1000;
+        } else if (age <= 25) {
+          premium = 1100;
+        } else if (age <= 30) {
+          premium = 1200;
+        } else if (age <= 35) {
+          premium = 1400;
+        } else if (age <= 40) {
+          premium = 1900;
+        } else if (age <= 45) {
+          premium = 2800;
+        } else if (age <= 50) {
+          premium = 4600;
+        }
+
+        const total = premium;
+
+        document.getElementById('premium-amount').textContent = `₹${premium.toFixed(2)}`;
+        document.getElementById('total-amount').textContent = `₹${total.toFixed(2)}`;
+
+        return { premium, total };
+      }
+
+      // Handle payment method selection
+      document.querySelectorAll('input[name="payment-method"]').forEach(radio => {
+        radio.addEventListener('change', (e) => {
+          document.querySelectorAll('.payment-details').forEach(section => {
+            section.classList.add('hidden');
+          });
+          document.getElementById(`${e.target.value}-section`).classList.remove('hidden');
+        });
+      });
+
+      // Format card number with spaces
+      document.getElementById('card-number').addEventListener('input', (e) => {
+        let value = e.target.value.replace(/\s+/g, '').replace(/[^0-9]/gi, '');
+        let formattedValue = value.match(/.{1,4}/g)?.join(' ') || value;
+        e.target.value = formattedValue.substring(0, 19);
+      });
+
+      // Format expiry date
+      document.getElementById('expiry').addEventListener('input', (e) => {
+        let value = e.target.value.replace(/\D/g, '');
+        if (value.length >= 2) {
+          value = value.substring(0, 2) + '/' + value.substring(2);
+        }
+        e.target.value = value.substring(0, 5);
+      });
+
+      // Initialize premium calculation when DOB is available
+      document.addEventListener('DOMContentLoaded', () => {
+        const dobInput = document.getElementById('dob');
+        if (dobInput) {
+          calculatePremium(dobInput.value);
+        }
+      });
+
+      // Payment button handlers
+      document.getElementById('verify-upi').addEventListener('click', () => {
+        const upiId = document.getElementById('upi-id').value;
+        if (!upiId) {
+          alert('Please enter UPI ID');
+          return;
+        }
+
+        const dobInput = document.getElementById('dob');
+        const premiumDetails = calculatePremium(dobInput.value);
+        
+        // Show payment confirmation dialog
+        const confirmPay = confirm(`Confirm payment of ₹${premiumDetails.total.toFixed(2)} via UPI?`);
+        if (confirmPay) {
+          // Create UPI payment link
+          const upiLink = `upi://pay?pa=${upiId}&pn=Suraksha%20Bharosa&am=${premiumDetails.total}&cu=INR&tn=Insurance%20Premium`;
+          
+          // Create success message
+          const successAlert = document.createElement('div');
+          successAlert.className = 'alert-success';
+          successAlert.innerHTML = `
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+              <polyline points="22 4 12 14.01 9 11.01"></polyline>
+            </svg>
+            <span>Payment initiated! Please complete the payment in your UPI app.</span>
+          `;
+          
+          // Remove any existing alerts
+          const existingAlerts = document.querySelectorAll('.alert-success, .alert-error');
+          existingAlerts.forEach(alert => alert.remove());
+          
+          // Add success message to page
+          const paymentSection = document.querySelector('.payment-section');
+          paymentSection.insertBefore(successAlert, document.getElementById('upi-section'));
+          
+          // Open UPI app if available
+          window.location.href = upiLink;
+        }
+      });
+
+      document.getElementById('pay-card').addEventListener('click', () => {
+        // Add card payment validation and processing
+        alert('Processing card payment...');
+      });
+
+      document.getElementById('pay-netbanking').addEventListener('click', () => {
+        const bank = document.getElementById('bank-select').value;
+        if (!bank) {
+          alert('Please select a bank');
+          return;
+        }
+        alert('Redirecting to bank portal...');
+      });
+    });
+  </script>
+
+  <!-- Add this script right before the closing body tag -->
+  <script>
+  // Function to calculate premium based on age
+  function calculatePremium() {
+    const dobInput = document.getElementById('dob');
+    if (!dobInput) return;
+
+    const dob = new Date(dobInput.value);
+    const today = new Date();
+    let age = today.getFullYear() - dob.getFullYear();
+    const monthDiff = today.getMonth() - dob.getMonth();
+    
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())) {
+      age--;
+    }
+
+    let premium = 0;
+
+    // Set premium based on age band
+    if (age <= 20) {
+      premium = 1000;
+    } else if (age <= 25) {
+      premium = 1100;
+    } else if (age <= 30) {
+      premium = 1200;
+    } else if (age <= 35) {
+      premium = 1400;
+    } else if (age <= 40) {
+      premium = 1900;
+    } else if (age <= 45) {
+      premium = 2800;
+    } else if (age <= 50) {
+      premium = 4600;
+    }
+
+    const total = premium;
+
+    // Update display
+    document.getElementById('premium-amount').textContent = `₹${premium.toFixed(2)}`;
+    document.getElementById('total-amount').textContent = `₹${total.toFixed(2)}`;
+
+    return { premium, total };
+  }
+
+  // Calculate premium when page loads
+  document.addEventListener('DOMContentLoaded', function() {
+    calculatePremium();
+    
+    // Recalculate when DOB changes
+    const dobInput = document.getElementById('dob');
+    if (dobInput) {
+      dobInput.addEventListener('change', calculatePremium);
+    }
+
+    // Handle UPI payment
+    const verifyUpiBtn = document.getElementById('verify-upi');
+    if (verifyUpiBtn) {
+      verifyUpiBtn.addEventListener('click', function() {
+        const upiId = document.getElementById('upi-id').value;
+        if (!upiId) {
+          alert('Please enter UPI ID');
+          return;
+        }
+
+        const premiumDetails = calculatePremium();
+        
+        // Create UPI payment link
+        const upiLink = `upi://pay?pa=${upiId}&pn=Suraksha%20Bharosa&am=${premiumDetails.total}&cu=INR&tn=Insurance%20Premium`;
+        
+        // Show payment confirmation
+        const confirmPay = confirm(`Confirm payment of ₹${premiumDetails.total.toFixed(2)} via UPI?`);
+        if (confirmPay) {
+          // Create success message
+          const successAlert = document.createElement('div');
+          successAlert.className = 'alert-success';
+          successAlert.innerHTML = `
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+              <polyline points="22 4 12 14.01 9 11.01"></polyline>
+            </svg>
+            <span>Payment initiated! Please complete the payment in your UPI app.</span>
+          `;
+          
+          // Remove any existing alerts
+          const existingAlerts = document.querySelectorAll('.alert-success, .alert-error');
+          existingAlerts.forEach(alert => alert.remove());
+          
+          // Add success message to page
+          const paymentSection = document.querySelector('.payment-section');
+          paymentSection.insertBefore(successAlert, document.getElementById('upi-section'));
+          
+          // Open UPI app
+          window.location.href = upiLink;
+        }
+      });
+    }
+  });
+  </script>
+</body>
+</html>
